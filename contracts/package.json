@@ -1,0 +1,19 @@
+{
+  "name": "payment-channel-contracts",
+  "version": "0.0.1",
+  "description": "Sample contracts for the layer two scaling workshop",
+  "main": "index.js",
+  "dependencies": {
+    "openzeppelin-solidity": "2.0.0-rc.1"
+  },
+  "devDependencies": {
+    "ganache-cli": "^6.1.8",
+    "solium": "^1.1.8",
+    "truffle": "^4.1.14"
+  },
+  "scripts": {
+    "test": "truffle test"
+  },
+  "author": "Lucas Vogelsang <l@lucasvo.com>",
+  "license": "MIT"
+}
