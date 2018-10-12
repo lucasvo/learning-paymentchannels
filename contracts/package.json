@@ -12,7 +12,9 @@
     "truffle": "^4.1.14"
   },
   "scripts": {
-    "test": "truffle test"
+    "test": "truffle test",
+    "migrate": "truffle migrate",
+    "ganache": "ganache-cli --gasLimit 4712388 --networkId 99999 -p 8545 -m \"tumble gas embody bright agree pony smoke laptop index sight shallow hungry\""
   },
   "author": "Lucas Vogelsang <l@lucasvo.com>",
   "license": "MIT"

@@ -1,4 +1,5 @@
 *.swp
 *.swo
 node/node_modules
+contracts/build
 contracts/node_modules/
