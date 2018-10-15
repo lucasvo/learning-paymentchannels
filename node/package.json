@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "node": "node src/index.js",
+    "watch:node": "nodemon node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,6 +20,8 @@
   "homepage": "https://github.com/lucasvo/learning-paymentchannels#readme",
   "dependencies": {
     "@nodeutils/defaults-deep": "^1.1.0",
+    "async": "^2.6.1",
+    "body-parser": "^1.18.3",
     "express": "^4.16.4",
     "expressjs": "^1.0.1",
     "libp2p": "^0.23.1",
@@ -29,6 +32,12 @@
     "libp2p-secio": "^0.10.0",
     "libp2p-spdy": "^0.12.1",
     "libp2p-tcp": "^0.13.0",
+    "nedb": "^1.8.0",
+    "nedb-promises": "^3.0.1",
+    "truffle-contract": "^3.0.6",
     "web3": "^1.0.0-beta.36"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.4"
   }
 }
