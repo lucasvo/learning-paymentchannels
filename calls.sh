@@ -1,1 +1,17 @@
-curl -v -X POST --header "Content-Type: application/json" --data '{ "channelId": "0x01", "counterparty": "0xc8dd3d66e112fae5c88fe6a677be24013e53c33e", "amount": 100}' http://localhost:3000/channel/
+# Create a channel
+curl -v -X POST --header "Content-Type: application/json" --data '{ "id": "0x0000000000000000000000000000000000000000000000000000000000000006", "counterparty": "0xc8dd3d66e112fae5c88fe6a677be24013e53c33e", "amount": 100}' http://localhost:3000/channel/
+
+# Get channel details
+curl http://localhost:3000/channel/0x0000000000000000000000000000000000000000000000000000000000000006/
+
+# Fund the channel
+curl -X POST http://localhost:3000/channel/0x0000000000000000000000000000000000000000000000000000000000000006/fund/
+
+
+# Join the channel (bob)
+curl -X POST http://localhost:3001/channel/0x0000000000000000000000000000000000000000000000000000000000000006/join/
+
+# Fund the channel (bob)
+curl -X POST http://localhost:3001/channel/0x0000000000000000000000000000000000000000000000000000000000000006/fund/
+ 
+
