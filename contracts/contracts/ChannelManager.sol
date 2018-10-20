@@ -1,16 +1,12 @@
 pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-
-
-// Channel State is simple enum:
-// initialized
-// partyA funded
-// partyB funded
-// pending settlement
-// settled
-
+import "openzeppelin-solidity/contracts/ECRecovery.sol";
 
 contract ChannelManager {
+    using ECRecovery for bytes32;
+
+    uint settlementBlockNumbers = 15; // 15 blocks = 3min
+
     enum ChannelState {
         INITIALIZED, // 0
         PARTYA_FUNDED, // 1
@@ -25,11 +21,15 @@ contract ChannelManager {
         ERC20 currency;
         uint32 balance;
         ChannelState state;
+        uint32 settlementBlock; // The settlement blockheight is set whenever a settlement transaction is accepted
+        uint32 nonce;
+        uint32 balanceA; // balanceB = balance*2-balanceA
+        bool withdrawn;
     }
 
     mapping(bytes32 => Channel) _channels;
 
-    function createChannel(bytes32 channelId, address partyA, address partyB, ERC20 currency, uint32 balance) public {
+    function create(bytes32 channelId, address partyA, address partyB, ERC20 currency, uint32 balance) public {
         // Abort if channelId is taken
         require(_channels[channelId].partyA == address(0), "channelId is already taken"); 
        
@@ -37,10 +37,10 @@ contract ChannelManager {
         // Validate provided Channel options
         require(partyA != address(0) && partyB != address(0), "parties must be non zero addresses");
 
-        _channels[channelId] = Channel(partyA, partyB, currency, balance, ChannelState.INITIALIZED);
+        _channels[channelId] = Channel(partyA, partyB, currency, balance, ChannelState.INITIALIZED, 0, 0);
     }
 
-    function getChannelDetails(bytes32 channelId) public view returns (
+    function getDetails(bytes32 channelId) public view returns (
         address partyA, address partyB, ERC20 currency, uint32 balance, ChannelState state) {
         Channel storage channel = _channels[channelId];
         return (channel.partyA, channel.partyB, channel.currency, channel.balance, channel.state);
@@ -48,7 +48,7 @@ contract ChannelManager {
 
     // fundChannel will attempt to fund the channel by calling transferFrom on 
     // the currency by withdrawing from the specified from address 
-    function fundChannel(bytes32 channelId) public {
+    function fund(bytes32 channelId) public {
         Channel storage channel = _channels[channelId];
         
         // Verify the sender is one of the two party and can fund the channel 
@@ -78,5 +78,20 @@ contract ChannelManager {
             channel.state = ChannelState.ACTIVE;
         }
         _channels[channelId] = channel;
+    }
+    // The withdraw method transfers the final amount to both parties whenever it is 
+    // called and enough blocks have been mined since the last settlement transaction
+    function withdraw(bytes32 channelId)  public {
+        Channel storage _channel = _channels[channelId];
+        require(_channel.partyA == msg.sender || channel.partyB == msg.sender, 
+                "Can only be called by one of the two members");
+
+        require(_channel.state == ChannelState.PENDING_SETTLEMENT && 
+                _channel.settlementBlock + settlementBlockNumbers > block.number, 
+                "channel must be in pending settlement state and more than `settlementBlockNumbers` must have passed.");
+        _channel.currency.transferFrom(this, channel.partyA, channel.balanceA);
+        _channel.currency.transferFrom(this, channel.partyB, channel.balance*2-channel.balanceA);
+        _channel.state = ChannelState.SETTLED;
+        _channels[channelId] = _channel;
     }
 }
