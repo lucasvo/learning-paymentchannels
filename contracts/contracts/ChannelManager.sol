@@ -43,7 +43,7 @@ contract ChannelManager {
     function getDetails(bytes32 channelId) public view returns (
         address partyA, address partyB, ERC20 currency, uint32 balance, ChannelState state) {
         Channel storage channel = _channels[channelId];
-        return (channel.partyA, channel.partyB, channel.currency, channel.balance, channel.state);
+        return (channel.partyA, channel.partyB, channel.currency, channel.balance, channel.state, channel.balanceA, channel.nonce);
     }
 
     // fundChannel will attempt to fund the channel by calling transferFrom on 
@@ -56,7 +56,7 @@ contract ChannelManager {
         // - A channel funded by A should only be fundable by B
         // - A channel funded by B should only be fundable by A
         require(
-           (
+            (
                 channel.state == ChannelState.INITIALIZED && (
                     channel.partyA == msg.sender || 
                     channel.partyB == msg.sender) 
@@ -79,6 +79,36 @@ contract ChannelManager {
         }
         _channels[channelId] = channel;
     }
+
+    // for simplicity, we only allow settlement by submitting a signed state update 
+    // from your counterparty. Settling with your own update is not implement. 
+    function settle(bytes32 _channelId, uint32 _nonce, uint32 _balanceA, bytes _signature)  public {
+        Channel storage _channel = _channels[_channelId];
+        require(channel.partyA == msg.sender || channel.partyB == msg.sender, 
+                "Can only be called by one of the two members");
+
+        require(channel.state == ChannelState.ACTIVE || channel.state ==  ChannelState.PENDING_SETTLEMENT, 
+                "can't settle channel. invalid state");
+        require(channel.balance*2 >= _balanceA, 
+                "channel balance for partyA can't be larger than total amount in escrow");
+        require(channel.nonce < _nonce, "nonce must be increased");
+        
+        address storage _counterparty = channel.partyB;
+        if (channel.partyB == msg.sender) {
+            counterparty = channel.partyA;
+        }
+
+        bytes32 storage _message = keccak255(abi.encodePacked(_channelId, _nonce, _balanceA, _counterparty));
+        _signer = _message.toEthSignedMessageHash().recover(_signature);
+        require(_signer == counterparty, "message needs to be signed by counterparty");
+        
+        channel.nonce = _nonce;
+        channel.balanceA = _balanceA;
+        channel.settlementBlock = block.number;
+        _channels[_channelId] = channel;
+    }
+
+
     // The withdraw method transfers the final amount to both parties whenever it is 
     // called and enough blocks have been mined since the last settlement transaction
     function withdraw(bytes32 channelId)  public {
