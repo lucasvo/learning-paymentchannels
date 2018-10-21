@@ -5,7 +5,7 @@ import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
 contract ChannelManager {
     using ECDSA for bytes32;
 
-    uint settlementBlockNumbers = 15; // 15 blocks ~ 3min, shorter than it should be in real life
+    uint blockTimeout = 15; // 15 blocks ~ 3min, shorter than it should be in real life
 
     enum ChannelState {
         INITIALIZED, // 0
@@ -45,7 +45,7 @@ contract ChannelManager {
         return (channel.partyA, channel.partyB, channel.currency, channel.balance, channel.state, channel.balanceA, channel.nonce);
     }
 
-    // fundChannel will attempt to fund the channel by calling transferFrom on 
+    // fund will attempt to fund the channel by calling transferFrom on 
     // the currency by withdrawing from the specified from address 
     function fund(bytes32 _channelId) public {
         Channel storage channel = channels[_channelId];
@@ -114,11 +114,11 @@ contract ChannelManager {
                 "Can only be called by one of the two members");
 
         require(channel.state == ChannelState.PENDING_SETTLEMENT && 
-                channel.settlementBlock + settlementBlockNumbers > block.number, 
-                "channel must be in pending settlement state and more than `settlementBlockNumbers` must have passed.");
+                channel.settlementBlock + blockTimeout < block.number, 
+                "channel must be in pending settlement state and more than `blockTimeout` must have passed.");
 
-        channel.currency.transferFrom(this, channel.partyA, channel.balanceA);
-        channel.currency.transferFrom(this, channel.partyB, channel.balance*2-channel.balanceA);
+        channel.currency.transfer(channel.partyA, channel.balanceA);
+        channel.currency.transfer(channel.partyB, channel.balance*2-channel.balanceA);
         channel.state = ChannelState.WITHDRAWN;
     }
 }
