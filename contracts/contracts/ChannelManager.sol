@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "openzeppelin-solidity/contracts/ECRecovery.sol";
+import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
 
 contract ChannelManager {
-    using ECRecovery for bytes32;
+    using ECDSA for bytes32;
 
-    uint settlementBlockNumbers = 15; // 15 blocks = 3min
+    uint settlementBlockNumbers = 15; // 15 blocks ~ 3min, shorter than it should be in real life
 
     enum ChannelState {
         INITIALIZED, // 0
@@ -13,7 +13,7 @@ contract ChannelManager {
         PARTYB_FUNDED, // 2
         ACTIVE, // 3
         PENDING_SETTLEMENT, // 4
-        SETTLED // 5
+        WITHDRAWN // 5
     } 
     struct Channel {
         address partyA;
@@ -21,35 +21,34 @@ contract ChannelManager {
         ERC20 currency;
         uint32 balance;
         ChannelState state;
-        uint32 settlementBlock; // The settlement blockheight is set whenever a settlement transaction is accepted
+        uint settlementBlock; // The settlement blockheight is set whenever a settlement transaction is accepted
         uint32 nonce;
         uint32 balanceA; // balanceB = balance*2-balanceA
-        bool withdrawn;
     }
 
-    mapping(bytes32 => Channel) _channels;
+    mapping(bytes32 => Channel) channels;
 
-    function create(bytes32 channelId, address partyA, address partyB, ERC20 currency, uint32 balance) public {
+    function create(bytes32 _channelId, address _partyA, address _partyB, ERC20 _currency, uint32 _balance) public {
         // Abort if channelId is taken
-        require(_channels[channelId].partyA == address(0), "channelId is already taken"); 
+        require(channels[_channelId].partyA == address(0), "channelId is already taken"); 
        
         
         // Validate provided Channel options
-        require(partyA != address(0) && partyB != address(0), "parties must be non zero addresses");
+        require(_partyA != address(0) && _partyB != address(0), "parties must be non zero addresses");
 
-        _channels[channelId] = Channel(partyA, partyB, currency, balance, ChannelState.INITIALIZED, 0, 0);
+        channels[_channelId] = Channel(_partyA, _partyB, _currency, _balance, ChannelState.INITIALIZED, 0, 0, 0);
     }
 
-    function getDetails(bytes32 channelId) public view returns (
-        address partyA, address partyB, ERC20 currency, uint32 balance, ChannelState state) {
-        Channel storage channel = _channels[channelId];
+    function getDetails(bytes32 _channelId) public view returns (
+        address partyA, address partyB, ERC20 currency, uint32 balance, ChannelState state, uint32 balanceA, uint32 nonce ) {
+        Channel storage channel = channels[_channelId];
         return (channel.partyA, channel.partyB, channel.currency, channel.balance, channel.state, channel.balanceA, channel.nonce);
     }
 
     // fundChannel will attempt to fund the channel by calling transferFrom on 
     // the currency by withdrawing from the specified from address 
-    function fund(bytes32 channelId) public {
-        Channel storage channel = _channels[channelId];
+    function fund(bytes32 _channelId) public {
+        Channel storage channel = channels[_channelId];
         
         // Verify the sender is one of the two party and can fund the channel 
         // - An initialized channel should only allow either A or B to fund
@@ -77,13 +76,12 @@ contract ChannelManager {
         } else {
             channel.state = ChannelState.ACTIVE;
         }
-        _channels[channelId] = channel;
     }
 
     // for simplicity, we only allow settlement by submitting a signed state update 
     // from your counterparty. Settling with your own update is not implement. 
     function settle(bytes32 _channelId, uint32 _nonce, uint32 _balanceA, bytes _signature)  public {
-        Channel storage _channel = _channels[_channelId];
+        Channel storage channel = channels[_channelId];
         require(channel.partyA == msg.sender || channel.partyB == msg.sender, 
                 "Can only be called by one of the two members");
 
@@ -93,35 +91,34 @@ contract ChannelManager {
                 "channel balance for partyA can't be larger than total amount in escrow");
         require(channel.nonce < _nonce, "nonce must be increased");
         
-        address storage _counterparty = channel.partyB;
+        address counterparty = channel.partyB;
         if (channel.partyB == msg.sender) {
             counterparty = channel.partyA;
         }
 
-        bytes32 storage _message = keccak255(abi.encodePacked(_channelId, _nonce, _balanceA, _counterparty));
-        _signer = _message.toEthSignedMessageHash().recover(_signature);
-        require(_signer == counterparty, "message needs to be signed by counterparty");
+        bytes32 message = keccak256(abi.encodePacked(_channelId, _nonce, _balanceA, counterparty));
+        address signer = message.toEthSignedMessageHash().recover(_signature);
+        require(signer == counterparty, "message needs to be signed by counterparty");
         
         channel.nonce = _nonce;
         channel.balanceA = _balanceA;
         channel.settlementBlock = block.number;
-        _channels[_channelId] = channel;
+        channel.state = ChannelState.PENDING_SETTLEMENT;
     }
-
 
     // The withdraw method transfers the final amount to both parties whenever it is 
     // called and enough blocks have been mined since the last settlement transaction
-    function withdraw(bytes32 channelId)  public {
-        Channel storage _channel = _channels[channelId];
-        require(_channel.partyA == msg.sender || channel.partyB == msg.sender, 
+    function withdraw(bytes32 _channelId)  public {
+        Channel storage channel = channels[_channelId];
+        require(channel.partyA == msg.sender || channel.partyB == msg.sender, 
                 "Can only be called by one of the two members");
 
-        require(_channel.state == ChannelState.PENDING_SETTLEMENT && 
-                _channel.settlementBlock + settlementBlockNumbers > block.number, 
+        require(channel.state == ChannelState.PENDING_SETTLEMENT && 
+                channel.settlementBlock + settlementBlockNumbers > block.number, 
                 "channel must be in pending settlement state and more than `settlementBlockNumbers` must have passed.");
-        _channel.currency.transferFrom(this, channel.partyA, channel.balanceA);
-        _channel.currency.transferFrom(this, channel.partyB, channel.balance*2-channel.balanceA);
-        _channel.state = ChannelState.SETTLED;
-        _channels[channelId] = _channel;
+
+        channel.currency.transferFrom(this, channel.partyA, channel.balanceA);
+        channel.currency.transferFrom(this, channel.partyB, channel.balance*2-channel.balanceA);
+        channel.state = ChannelState.WITHDRAWN;
     }
 }

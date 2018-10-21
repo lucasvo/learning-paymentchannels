@@ -9,7 +9,7 @@ const KadDHT = require('libp2p-kad-dht')
 const mplex = require('libp2p-mplex')
 const secio = require('libp2p-secio')
 const defaultsDeep = require('@nodeutils/defaults-deep')
-const libp2p = require('../../..')
+const libp2p = require('libp2p')
 
 function mapMuxers (list) {
   return list.map((pref) => {

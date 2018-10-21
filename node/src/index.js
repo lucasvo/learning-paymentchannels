@@ -6,7 +6,8 @@ const Datastore = require('nedb-promises')
 
 const testTokenContractAbi = require('../../contracts/build/contracts/TestToken.json')
 const channelManagerContractAbi = require('../../contracts/build/contracts/ChannelManager.json')
-const config = require('../config.js')
+const config = require('../config')
+const p2p = require('./p2p')
 
 // Setting up express.js App
 const app = express()
@@ -173,4 +174,14 @@ app.post('/channel/:channelId/settle', (req, res) => {
     res.send('Not implemented');
 })
 
+app.get('/dial/', (req, res) => {
+    p2p.dial()
+	res.send("OK")
+})
+
 app.listen(config.port, () => console.log(`Node listening on port ${config.port}!`))
+
+// Setting up p2p
+//p2p.startListener()
+p2p.createPeerIdFromKey(config.key)
+

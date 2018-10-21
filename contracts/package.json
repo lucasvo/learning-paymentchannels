@@ -4,6 +4,7 @@
   "description": "Sample contracts for the layer two scaling workshop",
   "main": "index.js",
   "dependencies": {
+    "ethereumjs-util": "^6.0.0",
     "openzeppelin-solidity": "2.0.0-rc.1"
   },
   "devDependencies": {
