@@ -72,8 +72,9 @@ contract ChannelManager {
                 channel.state = ChannelState.PARTYA_FUNDED;
             } else {
                 channel.state = ChannelState.PARTYB_FUNDED;
-            }
+            }    
         } else {
+            // TODO: Currently funding can be done multiple times without rejecting a transaction
             channel.state = ChannelState.ACTIVE;
         }
     }
