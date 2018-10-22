@@ -151,8 +151,8 @@ app.get('/channel/:id/', async function (req, res) {
 function messageString(channel, nonce, balance, sender) {
     // Pad and convert to bytes
     let payload = web3.utils.hexToBytes(web3.utils.padLeft(channel, 64));
-    payload += web3.utils.hexToBytes(web3.utils.padLeft(nonce, 64))
-    payload += web3.utils.hexToBytes(web3.utils.padLeft(balance, 64))
+    payload += web3.utils.hexToBytes(web3.utils.padLeft(nonce, 8))
+    payload += web3.utils.hexToBytes(web3.utils.padLeft(balance, 8))
     payload += sender
     return payload
 }
