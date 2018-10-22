@@ -85,26 +85,7 @@ contract ChannelManager {
         Channel storage channel = channels[_channelId];
         require(channel.partyA == msg.sender || channel.partyB == msg.sender, 
                 "Can only be called by one of the two members");
-
-        require(channel.state == ChannelState.ACTIVE || channel.state ==  ChannelState.PENDING_SETTLEMENT, 
-                "can't settle channel. invalid state");
-        require(channel.balance*2 >= _balanceA, 
-                "channel balance for partyA can't be larger than total amount in escrow");
-        require(channel.nonce < _nonce, "nonce must be increased");
-        
-        address counterparty = channel.partyB;
-        if (channel.partyB == msg.sender) {
-            counterparty = channel.partyA;
-        }
-
-        bytes32 message = keccak256(abi.encodePacked(_channelId, _nonce, _balanceA, counterparty));
-        address signer = message.toEthSignedMessageHash().recover(_signature);
-        require(signer == counterparty, "message needs to be signed by counterparty");
-        
-        channel.nonce = _nonce;
-        channel.balanceA = _balanceA;
-        channel.settlementBlock = block.number;
-        channel.state = ChannelState.PENDING_SETTLEMENT;
+        // Complete this method
     }
 
     // The withdraw method transfers the final amount to both parties whenever it is 

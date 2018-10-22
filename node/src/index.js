@@ -82,7 +82,6 @@ app.get('/mint_tokens', async function (req, res) {
 // Expects the following JSON Payload:
 // { "channelId": "0x01", "counterparty": "0xc8dd3d66e112fae5c88fe6a677be24013e53c33e", "amount": 100}
 app.post('/channel/', async function (req, res) {
-    // Helper: automatically pad channel id to 64 characters + "0x"
     let id = web3.utils.padLeft(req.body.id, 64)
     channel = {
         id: req.body.id,
@@ -160,32 +159,7 @@ function messageString(channel, nonce, balance, sender) {
 // Update the channel with a new balance
 app.post('/channel/:channelId/', async function (req, res) {
     console.log("Update channel", req.params.id)
-
-    let amount = req.body.amount
-    let channel = await getChannel(req.params.channelId)
-    if (amount > channel.balance) {
-        res.send({"error": "Channel balance insufficient"})
-    }
-    if (channel.state != 3) { // 3 = active
-        res.send({"error": "Channel not active"})
-    }
-    channel.nonce = channel.nonce+1
-    channel.balance = amount
-
-    let signature = web3.eth.sign(config.wallet, messageString(channel.id, channel.balance, channel.nonce, config.wallet))
-
-    let message = {
-        channel: channel.id,
-        balanceA: amount,
-        nonce: nonce,
-        signature: signature, // signature is channel, balance, nonce, address
-    }
-
-    p2p.sendMessage(config.p2pId, config.p2pPort, config.otherPeer, config.otherPeerPort, JSON.stringify(message))
-
-    channel.messages[nonce] = message
-    updateChannel(channel)
-    res.json(message);
+    res.send("Not implemented");
 })
 
 // Settle the channel on chain
