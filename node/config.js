@@ -5,11 +5,11 @@ let config = {
     contacts: {
         alice: {
             account: "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d",
-            peerId: "/ip4/127.0.0.1/tcp/10333/ipfs/QmcrQZ6RJdpYuGvZqD5QEHAv6qX4BrQLJLQPQUrTrzdcgm/ipfs/QmcrQZ6RJdpYuGvZqD5QEHAv6qX4BrQLJLQPQUrTrzdcgm",
+            peerId: "/ip4/127.0.0.1/tcp/10333/ipfs/QmcrQZ6RJdpYuGvZqD5QEHAv6qX4BrQLJLQPQUrTrzdcgm",
         },
         bob: {
             account: "0xc8dd3d66e112fae5c88fe6a677be24013e53c33e",
-            peerId: "/ip4/127.0.0.1/tcp/10334/ipfs/Qma3GsJmB47xYuyahPZPSadh1avvxfyYQwk8R3UnFrQ6aP/ipfs/Qma3GsJmB47xYuyahPZPSadh1avvxfyYQwk8R3UnFrQ6aP",
+            peerId: "/ip4/127.0.0.1/tcp/10334/ipfs/Qma3GsJmB47xYuyahPZPSadh1avvxfyYQwk8R3UnFrQ6aP",
         }
     },
     web3ProviderUrl: 'http://localhost:8545',

@@ -43,7 +43,7 @@ async function startListener() {
 	    }
 	    console.log('Listener ready, listening on:')
 	    listenerNode.peerInfo.multiaddrs.forEach((ma) => {
-		console.log('   ', ma.toString() + '/ipfs/' + peerId.toB58String())
+		console.log('   ', ma.toString() )
 		})
 
 	    resolve(listenerNode)
